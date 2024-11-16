@@ -4,7 +4,8 @@ import SpeechPlayer from "@/components/another_tts";
 
 export default function Home() {
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col items-center space-y-5">
+      <SpeechToText />
       <TextToSpeech />
       <SpeechPlayer />
     </div>
