@@ -7,6 +7,7 @@ export const useSpeech = () => {
     useState<SpeechSynthesisUtterance | null>(null);
 
   const speak = (text: string) => {
+    console.log(text)
     window.speechSynthesis.cancel();
     setIsPaused(false);
 

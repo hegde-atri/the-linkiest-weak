@@ -17,16 +17,49 @@ import {
 } from "@/components/ui/alert";
 
 import { useSpeech } from "@/lib/useSpeech";
+import { useTranscription } from "@/lib/useTranscription";
+
 
 function WeakestLinkGame() {
+  // const enableSpeech = false
+
   const {speak} = useSpeech()
+  // const { isListening, transcript, startListening, stopListening, error } = useTranscription()
+
+  const handleTranscript = (transcript: string) => {
+    console.log('New transcript:', transcript);
+  };
+
+  const handleIntent = (intent: string, confidence: number) => {
+    console.log(`Intent detected: ${intent} with confidence: ${confidence}`);
+    if (intent === 'BANK') {
+      // Handle banking
+      console.log('Banking points!');
+      handleBank()
+    } else if (intent === 'NEXT') {
+      console.log('Passing to next team.');
+      nextTeam()
+    }
+  };
+
+  const {
+    isListening,
+    transcript,
+    startListening,
+    stopListening,
+    error,
+    clearTranscript
+  } = useTranscription({
+    onTranscript: handleTranscript,
+    onIntentDetected: handleIntent
+  });
 
   const [gameState, setGameState] = useState({
     currentScore: 0,
     bankedScore: 0,
     currentQuestion: 0,
-    currentTeam: 0,
     maxTeam: 5,
+    currentTeam: 5, // Moves to next (first) team on start
     showBankOption: false,
     chainValue: 0,
   });
@@ -85,13 +118,21 @@ function WeakestLinkGame() {
       };
       
       // Then trigger the speech
-      speak("Hello from another component!");
+      speak(questions[prev.currentQuestion].question);
       
       // Return the new state
       return newState;
     });
   };
 
+
+  const startGame = () => {
+    // Begin the game
+    speak("Welcome to Linkiest Weak. A voice based spin of the hit TV show game, The Weakest Link!")
+    speak("First team get ready!")
+    nextTeam()
+    startListening()
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
@@ -151,8 +192,17 @@ function WeakestLinkGame() {
             >
               Next Team
             </Button>
+
+            <Button 
+              onClick={startGame}
+              className="w-full"
+              variant="secondary"
+            >
+              Start
+            </Button>
           </div>
         </CardContent>
+        {transcript}
       </Card>
     </div>
   );
