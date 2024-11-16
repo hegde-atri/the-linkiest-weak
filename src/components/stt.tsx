@@ -66,7 +66,10 @@ export default function SpeechToText() {
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
         <CardTitle>Speech to Text</CardTitle>
-        <CardDescription>lol it don't work</CardDescription>
+        <CardDescription>
+          Click the microphone button and start speaking. Your words will appear
+          in the text box below.
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex justify-center gap-2">
