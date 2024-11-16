@@ -16,8 +16,11 @@ import {
   AlertDescription
 } from "@/components/ui/alert";
 
+import { useSpeech } from "@/lib/useSpeech";
 
 function WeakestLinkGame() {
+  const {speak} = useSpeech()
+
   const [gameState, setGameState] = useState({
     currentScore: 0,
     bankedScore: 0,
@@ -74,11 +77,21 @@ function WeakestLinkGame() {
   };
 
   const nextTeam = () => {
-    setGameState(prev => ({
-      ...prev,
-      currentTeam: (prev.currentTeam + 1) % prev.maxTeam,
-    }));
+    setGameState(prev => {
+      // First update the state
+      const newState = {
+        ...prev,
+        currentTeam: (prev.currentTeam + 1) % prev.maxTeam,
+      };
+      
+      // Then trigger the speech
+      speak("Hello from another component!");
+      
+      // Return the new state
+      return newState;
+    });
   };
+
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
