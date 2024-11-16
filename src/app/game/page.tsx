@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -18,53 +18,37 @@ import {
 
 import { useSpeech } from "@/lib/useSpeech";
 import { useTranscription } from "@/lib/useTranscription";
+import { collectSegments } from "next/dist/build/segment-config/app/app-segments";
 
+interface GameState {
+  currentScore: number;
+  bankedScore: number;
+  currentQuestion: number;
+  maxTeam: number;
+  currentTeam: number;
+  showBankOption: boolean;
+  chainValue: number;
+}
+
+interface ClassificationResult {
+  isAnswer: boolean;
+  method: 'rules' | 'hybrid';
+  confidence: number;
+}
 
 function WeakestLinkGame() {
-  // const enableSpeech = false
-
-  const {speak} = useSpeech()
-  // const { isListening, transcript, startListening, stopListening, error } = useTranscription()
-
-  const handleTranscript = (transcript: string) => {
-    console.log('New transcript:', transcript);
-  };
-
-  const handleIntent = (intent: string, confidence: number) => {
-    console.log(`Intent detected: ${intent} with confidence: ${confidence}`);
-    if (intent === 'BANK') {
-      // Handle banking
-      console.log('Banking points!');
-      handleBank()
-    } else if (intent === 'NEXT') {
-      console.log('Passing to next team.');
-      nextTeam()
-    }
-  };
-
-  const {
-    isListening,
-    transcript,
-    startListening,
-    stopListening,
-    error,
-    clearTranscript
-  } = useTranscription({
-    onTranscript: handleTranscript,
-    onIntentDetected: handleIntent
-  });
-
-  const [gameState, setGameState] = useState({
+  const { speak } = useSpeech();
+  const [gameState, setGameState] = useState<GameState>({
     currentScore: 0,
     bankedScore: 0,
     currentQuestion: 0,
     maxTeam: 5,
-    currentTeam: 5, // Moves to next (first) team on start
+    currentTeam: 5,
     showBankOption: false,
     chainValue: 0,
   });
 
-  // Sample questions - in real app, you'd have a larger database
+  // Sample questions array (move to separate file in production)
   const questions = [
     {
       question: "What is the capital of France?",
@@ -82,57 +66,97 @@ function WeakestLinkGame() {
 
   const chainValues = [0, 100, 250, 500, 1000, 2500, 5000, 10000, 12500];
 
-  const handleBank = () => {
+  // Handle transcription and classification
+  const handleTranscript = useCallback((transcript: string) => {
+    console.log('New transcript:', transcript);
+  }, []);
+
+  const handleIntent = useCallback((intent: string) => {
+    console.log(`Intent detected: ${intent}`);
+    
+    const intentActions = {
+      BANK: () => handleBank(),
+      NEXT: () => nextTeam(),
+      ANSWER: () => handleAnswer(true),
+      STOP: () => stopListening()
+    };
+
+    const action = intentActions[intent as keyof typeof intentActions];
+    if (action) {
+      action();
+    }
+  }, []);
+
+  const handleAnswer = useCallback((isCorrect: boolean) => {
+    setGameState(prev => ({
+      ...prev,
+      chainValue: isCorrect 
+        ? Math.min(prev.chainValue + 1, chainValues.length - 1)
+        : 0,
+      currentQuestion: prev.currentQuestion + 1,
+      showBankOption: isCorrect
+    }));
+  }, [chainValues.length]);
+
+  const handleAnswerDetected = useCallback((answer: string) => {
+    console.log("CALLED - Answer detected", answer)
+
+    const currentQuestion = questions[gameState.currentQuestion];
+    if (!currentQuestion) return;
+
+    // Compare answer with current question's answer
+    const isCorrect = answer.toLowerCase().includes(
+      currentQuestion.answer.toLowerCase()
+    );
+
+    console.log(`Answer detected: ${answer}`);
+    console.log(`Is correct: ${isCorrect}`);
+
+    handleAnswer(isCorrect);
+  }, [gameState.currentQuestion, questions, handleAnswer]);
+
+  const {
+    isListening,
+    transcript,
+    startListening,
+    stopListening,
+    error,
+    clearTranscript,
+    classification
+  } = useTranscription({
+    onIntentDetected: handleIntent,
+    onTranscript: handleTranscript,
+    onAnswerDetected: (answer) => handleAnswerDetected(answer, classification)
+  });
+
+  // Game actions
+  const handleBank = useCallback(() => {
     setGameState(prev => ({
       ...prev,
       bankedScore: prev.bankedScore + chainValues[prev.chainValue],
       chainValue: 0,
       showBankOption: false
     }));
-  };
+  }, [chainValues]);
 
-  const handleAnswer = (isCorrect: boolean) => {
-    if (isCorrect) {
-      setGameState(prev => ({
-        ...prev,
-        chainValue: Math.min(prev.chainValue + 1, chainValues.length - 1),
-        currentQuestion: prev.currentQuestion + 1,
-        showBankOption: true
-      }));
-    } else {
-      setGameState(prev => ({
-        ...prev,
-        chainValue: 0,
-        currentQuestion: prev.currentQuestion + 1,
-        showBankOption: false
-      }));
-    }
-  };
-
-  const nextTeam = () => {
+  const nextTeam = useCallback(() => {
     setGameState(prev => {
-      // First update the state
       const newState = {
         ...prev,
         currentTeam: (prev.currentTeam + 1) % prev.maxTeam,
       };
       
-      // Then trigger the speech
       speak(questions[prev.currentQuestion].question);
-      
-      // Return the new state
       return newState;
     });
-  };
+  }, [speak, questions]);
 
-
-  const startGame = () => {
-    // Begin the game
-    speak("Welcome to Linkiest Weak. A voice based spin of the hit TV show game, The Weakest Link!")
-    speak("First team get ready!")
-    nextTeam()
-    startListening()
-  }
+  const startGame = useCallback(() => {
+    speak("Welcome to Linkiest Weak. A voice based spin of the hit TV show game, The Weakest Link!");
+    speak("First team get ready!");
+    nextTeam();
+    startListening();
+  }, [speak, nextTeam, startListening]);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
@@ -202,7 +226,6 @@ function WeakestLinkGame() {
             </Button>
           </div>
         </CardContent>
-        {transcript}
       </Card>
     </div>
   );

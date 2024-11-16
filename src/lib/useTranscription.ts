@@ -1,19 +1,29 @@
 // hooks/useTranscription.ts
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface UseTranscriptionProps {
   onTranscript?: (transcript: string) => void;
-  onIntentDetected?: (intent: string, confidence: number) => void;
+  onIntentDetected?: (intent: string) => void;
+  onAnswerDetected?: (answer: string) => void;
+}
+
+interface ClassificationResult {
+  isAnswer: boolean;
+  method: 'rules' | 'hybrid';
+  confidence: number;
 }
 
 export const useTranscription = ({
   onTranscript,
-  onIntentDetected
+  onIntentDetected,
+  onAnswerDetected
 }: UseTranscriptionProps = {}) => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
-  
+  const [classification, setClassification] = useState<ClassificationResult | null>(null);
+
   // Use ref instead of state for recognition instance
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
@@ -21,8 +31,32 @@ export const useTranscription = ({
   const INTENT_PATTERNS = {
     BANK: ['bank', 'banking', 'save points'],
     NEXT: ['next', 'next team', 'skip'],
-    STOP: ['stop', 'end', 'finish']
+    STOP: ['stop', 'end', 'finish'],
+    ANSWER: ['answer']
   };
+
+  const classifyText = useCallback(async (text: string) => {
+    console.log("Attempting to classify: ", text)
+    try {
+      const response = await fetch('/api/classify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text }),
+      });
+      
+      const result = await response.json();
+      console.log("Classification result:", result)
+      setClassification(result);
+      
+      if (result.isAnswer) {
+        onAnswerDetected?.(text);
+      }
+    } catch (error) {
+      console.error('Classification error:', error);
+    }
+  }, [onAnswerDetected]);
 
   const detectIntent = useCallback((text: string) => {
     const normalizedText = text.toLowerCase().trim();
@@ -30,7 +64,7 @@ export const useTranscription = ({
     for (const [intent, keywords] of Object.entries(INTENT_PATTERNS)) {
       if (keywords.some(keyword => normalizedText.includes(keyword))) {
         console.log(`Intent detected: ${intent}`);
-        onIntentDetected?.(intent, 1);
+        onIntentDetected?.(intent);
         return intent;
       }
     }
@@ -75,12 +109,14 @@ export const useTranscription = ({
       onTranscript?.(transcriptChunk);
       
       if (event.results[current].isFinal) {
-        detectIntent(transcriptChunk);
+        const intent = detectIntent(transcriptChunk);
+        if (!intent) {
+          // Only classify if no intent was detected
+          classifyText(transcriptChunk);
+        }
       }
     };
-
-    // No cleanup needed here as we're using ref
-  }, []); // Empty dependency array as we only need to initialize once
+  }, [onTranscript, detectIntent, classifyText]); 
 
   const startListening = useCallback(() => {
     if (recognitionRef.current) {
@@ -110,6 +146,7 @@ export const useTranscription = ({
     startListening,
     stopListening,
     error,
-    clearTranscript
+    clearTranscript,
+    classification
   };
 };
