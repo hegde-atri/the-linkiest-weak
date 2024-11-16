@@ -6,19 +6,25 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+} from "@/components/ui/card";
+import {
   Button,
+} from "@/components/ui/button";
+import {
   Alert,
   AlertTitle,
   AlertDescription
-} from "@/components/ui";
+} from "@/components/ui/alert";
+
 
 function WeakestLinkGame() {
   const [gameState, setGameState] = useState({
     currentScore: 0,
     bankedScore: 0,
     currentQuestion: 0,
-    currentTeam: 1,
-    showBankOption: true,
+    currentTeam: 0,
+    maxTeam: 5,
+    showBankOption: false,
     chainValue: 0,
   });
 
@@ -38,7 +44,7 @@ function WeakestLinkGame() {
     },
   ];
 
-  const chainValues = [0, 20, 50, 100, 200, 500, 1000];
+  const chainValues = [0, 100, 250, 500, 1000, 2500, 5000, 10000, 12500];
 
   const handleBank = () => {
     setGameState(prev => ({
@@ -49,7 +55,7 @@ function WeakestLinkGame() {
     }));
   };
 
-  const handleAnswer = (isCorrect) => {
+  const handleAnswer = (isCorrect: boolean) => {
     if (isCorrect) {
       setGameState(prev => ({
         ...prev,
@@ -62,7 +68,7 @@ function WeakestLinkGame() {
         ...prev,
         chainValue: 0,
         currentQuestion: prev.currentQuestion + 1,
-        showBankOption: true
+        showBankOption: false
       }));
     }
   };
@@ -70,8 +76,7 @@ function WeakestLinkGame() {
   const nextTeam = () => {
     setGameState(prev => ({
       ...prev,
-      currentTeam: prev.currentTeam + 1,
-      showBankOption: true
+      currentTeam: (prev.currentTeam + 1) % prev.maxTeam,
     }));
   };
 
@@ -79,7 +84,7 @@ function WeakestLinkGame() {
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
       <Card className="w-full max-w-2xl">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">The Weakest Link</CardTitle>
+          <CardTitle className="text-2xl text-center">The Linkiest Weak</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-2 gap-4 p-4 bg-card rounded-lg">
