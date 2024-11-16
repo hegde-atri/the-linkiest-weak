@@ -84,7 +84,7 @@ function WeakestLinkGame() {
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
       <Card className="w-full max-w-2xl">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">The Linkiest Weak</CardTitle>
+          <CardTitle className="text-2xl text-center">The Linkiest Weak 🔗 😩</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-2 gap-4 p-4 bg-card rounded-lg">
@@ -106,15 +106,15 @@ function WeakestLinkGame() {
           </Alert>
 
           <div className="space-y-4">
-            {gameState.showBankOption && (
-              <Button 
-                onClick={handleBank} 
-                className="w-full"
-                variant="outline"
-              >
-                Bank £{chainValues[gameState.chainValue]}
-              </Button>
-            )}
+            <Button 
+              onClick={handleBank} 
+              className="w-full"
+              variant={gameState.chainValue == chainValues.length - 1 ? "destructive" : "outline"}
+              disabled={!gameState.showBankOption}
+            >
+              {gameState.showBankOption ? `Bank £${chainValues[gameState.chainValue]}` : "Nothing to bank!"}
+              
+            </Button>
 
             <div className="grid grid-cols-2 gap-4">
               <Button
