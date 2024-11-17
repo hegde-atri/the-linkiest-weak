@@ -16,46 +16,21 @@ export function parseText(text: string) {
 
     return decoded;
 }
-
+// lib/trivia.ts
 async function fetchCategoryQuestions(category: number, amount: number = 3) {
-    try {
-        const response = await fetch(
-            `https://opentdb.com/api.php?amount=${amount}&category=${category}&difficulty=easy&type=multiple`,
-        );
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            console.error("API request failed:", errorData);
-            throw new Error(
-                `API request failed with status ${response.status}`,
-            );
-        }
-
-        const data = await response.json();
-        console.log("API response data:", data);
-        return data.results;
-    } catch (error) {
-        console.error("Failed to fetch questions from API:", error);
-        throw error;
-    }
+    const response = await fetch(
+        `https://opentdb.com/api.php?amount=${amount}&category=${category}&difficulty=easy&type=multiple`,
+    );
+    const data = await response.json();
+    return data.results;
 }
 
-export async function getQuestions() {
+export async function getQuestions(category: number[]) {
     try {
-        // Fetch questions from multiple easy categories
-        const categories = [
-            { id: 27, name: "Animals" }, // Animals
-            // { id: 22, name: "Geography" }, // Geography
-            // { id: 9, name: "General" }, // General Knowledge
-            // { id: 12, name: "Music" }, // Music
-        ];
-
         const allQuestions = await Promise.all(
-            categories.map((cat) => fetchCategoryQuestions(cat.id, 3)),
+            category.map((cat) => fetchCategoryQuestions(cat, 10)),
         );
-        console.log(allQuestions);
 
-        // Flatten and format questions
         return (
             allQuestions
                 .flat()

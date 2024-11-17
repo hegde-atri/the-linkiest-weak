@@ -33,8 +33,13 @@ interface ClassificationResult {
 
 function WeakestLinkGame() {
   const { speak } = useSpeech();
-  const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
+  const [questions, setQuestions] = useState<Question[]>([
+    {
+      question: "What is the capital of France?",
+      answer: "Paris",
+    },
+  ]);
   const [e, setError] = useState<string | null>(null);
   const [gameState, setGameState] = useState<GameState>({
     currentScore: 0,
@@ -46,17 +51,18 @@ function WeakestLinkGame() {
     chainValue: 0,
   });
 
-  // Fetch questions when component mounts
-  useEffect(() => {
-    fetchQuestions();
-  }, []);
+  const categories = [
+    { id: 27, name: "Animals" }, // Animals
+    { id: 22, name: "Geography" }, // Geography
+    { id: 9, name: "General" }, // General Knowledge
+    { id: 12, name: "Music" }, // Music
+  ];
 
   const fetchQuestions = async () => {
     try {
       setLoading(true);
-      const result = await getQuestions();
+      const result = await getQuestions([27]);
       setQuestions(result);
-      console.log(result);
       setError(null);
     } catch (err) {
       setError("Failed to load questions. Please try again.");
@@ -64,8 +70,10 @@ function WeakestLinkGame() {
       setLoading(false);
     }
   };
-  console.log(e);
-  console.log(questions);
+
+  useEffect(() => {
+    fetchQuestions();
+  }, []);
 
   const chainValues = [0, 100, 250, 500, 1000, 2500, 5000, 10000, 12500];
 
