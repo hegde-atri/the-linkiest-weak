@@ -7,6 +7,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useTranscription } from "@/lib/useTranscription";
 import { speak } from "@/lib/useSpeech";
 import { getQuestions } from "@/lib/trivia";
+import Confetti from "react-confetti-boom";
 
 interface GameState {
   currentScore: number;
@@ -31,8 +32,8 @@ export default function WeakestLinkGame() {
     currentScore: 0,
     bankedScore: 0,
     currentQuestion: 0,
-    maxTeam: 5,
-    currentTeam: 5,
+    maxTeam: 4,
+    currentTeam: 4,
     showBankOption: false,
     chainValue: 0,
   });
@@ -80,24 +81,24 @@ export default function WeakestLinkGame() {
       "type": "multiple",
       "difficulty": "easy",
       "category": "General Knowledge",
-      "question": "Which sign of the zodiac is represented by the Crab?",
-      "answer": "Cancer",
-      "incorrect_answers": [
-        "Libra",
-        "Virgo",
-        "Sagittarius"
-      ]
-    },
-    {
-      "type": "multiple",
-      "difficulty": "easy",
-      "category": "General Knowledge",
       "question": "The likeness of which president is featured on the rare $2 bill of USA currency?",
       "answer": "Thomas Jefferson",
       "incorrect_answers": [
         "Martin Van Buren",
         "Ulysses Grant",
         "John Quincy Adams"
+      ]
+    },
+    {
+      "type": "multiple",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "question": "Which sign of the zodiac is represented by the Crab?",
+      "answer": "Cancer",
+      "incorrect_answers": [
+        "Libra",
+        "Virgo",
+        "Sagittarius"
       ]
     },
     {
@@ -116,30 +117,6 @@ export default function WeakestLinkGame() {
       "type": "multiple",
       "difficulty": "easy",
       "category": "General Knowledge",
-      "question": "What is the French word for 'fish'?",
-      "answer": "poisson",
-      "incorrect_answers": [
-        "fiche",
-        "escargot",
-        "mer"
-      ]
-    },
-    {
-      "type": "multiple",
-      "difficulty": "easy",
-      "category": "General Knowledge",
-      "question": "Which of the following is not the host of a program on NPR?",
-      "answer": "Ben Shapiro",
-      "incorrect_answers": [
-        "Terry Gross",
-        "Ira Glass",
-        "Peter Sagal"
-      ]
-    },
-    {
-      "type": "multiple",
-      "difficulty": "easy",
-      "category": "General Knowledge",
       "question": "Area 51 is located in which US state?",
       "answer": "Nevada",
       "incorrect_answers": [
@@ -152,48 +129,12 @@ export default function WeakestLinkGame() {
       "type": "multiple",
       "difficulty": "easy",
       "category": "General Knowledge",
-      "question": "In which fast food chain can you order a Jamocha Shake?",
-      "answer": "Arby&#039;s",
-      "incorrect_answers": [
-        "McDonald&#039;s",
-        "Burger King",
-        "Wendy&#039;s"
-      ]
-    },
-    {
-      "type": "multiple",
-      "difficulty": "easy",
-      "category": "General Knowledge",
-      "question": "What was the nickname given to the Hughes H-4 Hercules, a heavy transport flying boat which achieved flight in 1947?",
-      "answer": "Spruce Goose",
-      "incorrect_answers": [
-        "Noah&#039;s Ark",
-        "Fat Man",
-        "Trojan Horse"
-      ]
-    },
-    {
-      "type": "multiple",
-      "difficulty": "easy",
-      "category": "General Knowledge",
       "question": "In the video-game franchise Kingdom Hearts, the main protagonist, carries a weapon with what shape?",
       "answer": "Key",
       "incorrect_answers": [
         "Sword",
         "Pen",
         "Cellphone"
-      ]
-    },
-    {
-      "type": "multiple",
-      "difficulty": "easy",
-      "category": "General Knowledge",
-      "question": "How would one say goodbye in Spanish?",
-      "answer": "Adi&oacute;s",
-      "incorrect_answers": [
-        " Hola",
-        "Au Revoir",
-        "Salir"
       ]
     },
     {
@@ -236,30 +177,6 @@ export default function WeakestLinkGame() {
       "type": "multiple",
       "difficulty": "easy",
       "category": "General Knowledge",
-      "question": "The drug cartel run by Pablo Escobar originated in which South American city?",
-      "answer": "Medell&iacute;n",
-      "incorrect_answers": [
-        "Bogot&aacute;",
-        "Quito",
-        "Cali"
-      ]
-    },
-    {
-      "type": "multiple",
-      "difficulty": "easy",
-      "category": "General Knowledge",
-      "question": "What company developed the vocaloid Hatsune Miku?",
-      "answer": "Crypton Future Media",
-      "incorrect_answers": [
-        "Sega",
-        "Sony",
-        "Yamaha Corporation"
-      ]
-    },
-    {
-      "type": "multiple",
-      "difficulty": "easy",
-      "category": "General Knowledge",
       "question": "Which one of the following rhythm games was made by Harmonix?",
       "answer": "Rock Band",
       "incorrect_answers": [
@@ -291,7 +208,7 @@ export default function WeakestLinkGame() {
         "Blue",
         "Yellow"
       ]
-    }
+    },
   ]
   
   const chainValues = [0, 100, 250, 500, 1000, 2500, 5000, 10000, 12500];
@@ -301,6 +218,14 @@ export default function WeakestLinkGame() {
       console.log(`New transcript: [${transcript}]`);
     }
   }, []);
+
+  const [confetti, setConfetti] = useState(false);
+  const triggerConfetti = () => {
+      setConfetti(true);
+      setTimeout(() => {
+          setConfetti(false);
+      }, 1600);
+  };
 
   const handleAnswer = useCallback(
     (isCorrect: boolean) => {
@@ -314,10 +239,13 @@ export default function WeakestLinkGame() {
       }));
 
       // Provide feedback based on answer
+      if(isCorrect){
+        triggerConfetti()
+      }
       speak(isCorrect ? "Correct!" : "Wrong answer!");
       nextTeam()
     },
-    [chainValues.length, speak],
+    [chainValues.length, speak, confetti],
   );
 
   const handleAnswerDetected = useCallback(
@@ -399,7 +327,7 @@ export default function WeakestLinkGame() {
         currentTeam: (prev.currentTeam + 1) % prev.maxTeam,
       };
 
-      speak(questions[prev.currentQuestion].question);
+      speak(`Team ${prev.currentTeam}, ${questions[prev.currentQuestion].question}`);
       return newState;
     });
   }, [speak, questions]);
@@ -446,6 +374,9 @@ export default function WeakestLinkGame() {
               {questions[gameState.currentQuestion % questions.length].question}
             </AlertDescription>
           </Alert>
+          {confetti && (
+            <Confetti />
+          )}
 
           <div className="space-y-4">
             <Button
