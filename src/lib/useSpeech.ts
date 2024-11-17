@@ -1,76 +1,38 @@
-import { useState, useEffect } from "react";
+import { ElevenLabsClient } from "elevenlabs";
 
-export const useSpeech = () => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [currentUtterance, setCurrentUtterance] = 
-    useState<SpeechSynthesisUtterance | null>(null);
+export const speak = async (text: string) => {
+  try {
+    const elevenlabs = new ElevenLabsClient({
+      apiKey: process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY
+    });
 
-  const speak = (text: string) => {
-    console.log(text)
-    window.speechSynthesis.cancel();
-    setIsPaused(false);
+    const audio = await elevenlabs.generate({
+      voice: "Sarah",
+      text: text,
+      model_id: "eleven_multilingual_v2"
+    });
 
-    const utterance = new SpeechSynthesisUtterance(text);
-
-    utterance.onend = () => {
-      setIsPlaying(false);
-      setIsPaused(false);
-      setCurrentUtterance(null);
-    };
-
-    utterance.onpause = () => {
-      setIsPlaying(false);
-      setIsPaused(true);
-    };
-
-    utterance.onresume = () => {
-      setIsPlaying(true);
-      setIsPaused(false);
-    };
-
-    utterance.onstart = () => {
-      setIsPlaying(true);
-      setIsPaused(false);
-    };
-
-    setCurrentUtterance(utterance);
-    window.speechSynthesis.speak(utterance);
-  };
-
-  const toggleSpeech = (text: string) => {
-    if (isPlaying) {
-      window.speechSynthesis.pause();
-      setIsPaused(true);
-      setIsPlaying(false);
-    } else if (isPaused && currentUtterance?.text === text) {
-      window.speechSynthesis.resume();
-      setIsPaused(false);
-      setIsPlaying(true);
-    } else {
-      speak(text);
+    // Convert Readable to Uint8Array
+    const chunks: Uint8Array[] = [];
+    for await (const chunk of audio) {
+      chunks.push(chunk);
     }
-  };
+    const buffer = Buffer.concat(chunks);
 
-  const stopSpeech = () => {
-    window.speechSynthesis.cancel();
-    setIsPlaying(false);
-    setIsPaused(false);
-    setCurrentUtterance(null);
-  };
-
-  useEffect(() => {
-    return () => {
-      window.speechSynthesis.cancel();
+    // Create blob from buffer
+    const audioBlob = new Blob([buffer], { type: 'audio/mpeg' });
+    // Create audio URL
+    const audioUrl = URL.createObjectURL(audioBlob);
+    // Create and play audio
+    const audioElement = new Audio(audioUrl);
+    
+    await audioElement.play();
+    
+    // Cleanup URL after playing
+    audioElement.onended = () => {
+      URL.revokeObjectURL(audioUrl);
     };
-  }, []);
-
-  return {
-    isPlaying,
-    isPaused,
-    currentUtterance,
-    speak,
-    toggleSpeech,
-    stopSpeech
-  };
+  } catch (error) {
+    console.error("Error playing audio:", error);
+  }
 };
