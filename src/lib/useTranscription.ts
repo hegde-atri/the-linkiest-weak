@@ -45,9 +45,6 @@ export const useTranscription = ({
   const [error, setError] = useState<string | null>(null);
   const [classification, setClassification] = useState<ClassificationResult | null>(null);
 
-	const lastSpeechTime = useRef(Date.now());
-	const timeoutRef = useRef(null);
-
   // Use ref instead of state for recognition instance
   const recognitionRef = useRef<SpeechRecognitionType | null>(null);
 
@@ -55,15 +52,6 @@ export const useTranscription = ({
   const INTENT_PATTERNS = {
     BANK: ['bank', 'banking', 'save points', 'save'],
   };
-
-
-  useEffect(() => {
-		return () => {
-			if (timeoutRef.current) {
-				clearTimeout(timeoutRef.current);
-			}
-		};
-	}, []);
 
   const classifyText = useCallback(async (text: string) => {
     if (text) {
@@ -132,44 +120,21 @@ export const useTranscription = ({
       setIsListening(false);
     };
 
-    // @ts-expect-error
-    recognitionRef.current.onresult = (event) => {
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
       const current = event.resultIndex;
-      const currentTranscript = event.results[current][0].transcript;
-
-      setTranscript(currentTranscript);
-
-      lastSpeechTime.current = Date.now();
-
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
+      const transcriptChunk = event.results[current][0].transcript;
+      
+      setTranscript(transcriptChunk);
+      onTranscript?.(transcriptChunk);
+      
+      if (event.results[current].isFinal) {
+        const intent = detectIntent(transcriptChunk);
+        if (!intent) {
+          // Only classify if no intent was detected
+          classifyText(transcriptChunk);
+        }
       }
-
-      // @ts-expect-error
-      timeoutRef.current = setTimeout(() => {
-        const intent = detectIntent(currentTranscript);
-          if (!intent) {
-            // Only classify if no intent was detected
-            classifyText(currentTranscript);
-          }
-      }, 1500);
     };
-    
-    // recognition.onresult = (event: SpeechRecognitionEvent) => {
-    //   const current = event.resultIndex;
-    //   const transcriptChunk = event.results[current][0].transcript;
-    //   
-    //   setTranscript(transcriptChunk);
-    //   onTranscript?.(transcriptChunk);
-    //   
-    //   if (event.results[current].isFinal) {
-    //     const intent = detectIntent(transcriptChunk);
-    //     if (!intent) {
-    //       // Only classify if no intent was detected
-    //       classifyText(transcriptChunk);
-    //     }
-    //   }
-    // };
   }, [onTranscript, detectIntent, classifyText]); 
 
   const startListening = useCallback(() => {
