@@ -1,24 +1,19 @@
-'use client'
+"use client";
 
-import { useState, useCallback } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Button,
-} from "@/components/ui/button";
-import {
-  Alert,
-  AlertTitle,
-  AlertDescription
-} from "@/components/ui/alert";
+import { useState, useCallback, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 import { useSpeech } from "@/lib/useSpeech";
 import { useTranscription } from "@/lib/useTranscription";
 import { collectSegments } from "next/dist/build/segment-config/app/app-segments";
+import { getQuestions } from "@/lib/trivia";
+
+interface Question {
+  question: string;
+  answer: string;
+}
 
 interface GameState {
   currentScore: number;
@@ -32,12 +27,15 @@ interface GameState {
 
 interface ClassificationResult {
   isAnswer: boolean;
-  method: 'rules' | 'hybrid';
+  method: "rules" | "hybrid";
   confidence: number;
 }
 
 function WeakestLinkGame() {
   const { speak } = useSpeech();
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [e, setError] = useState<string | null>(null);
   const [gameState, setGameState] = useState<GameState>({
     currentScore: 0,
     bankedScore: 0,
@@ -48,37 +46,42 @@ function WeakestLinkGame() {
     chainValue: 0,
   });
 
-  // Sample questions array (move to separate file in production)
-  const questions = [
-    {
-      question: "What is the capital of France?",
-      answer: "Paris",
-    },
-    {
-      question: "Which planet is known as the Red Planet?",
-      answer: "Mars",
-    },
-    {
-      question: "What is the largest mammal in the world?",
-      answer: "Blue Whale",
-    },
-  ];
+  // Fetch questions when component mounts
+  useEffect(() => {
+    fetchQuestions();
+  }, []);
+
+  const fetchQuestions = async () => {
+    try {
+      setLoading(true);
+      const result = await getQuestions();
+      setQuestions(result);
+      console.log(result);
+      setError(null);
+    } catch (err) {
+      setError("Failed to load questions. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  console.log(e);
+  console.log(questions);
 
   const chainValues = [0, 100, 250, 500, 1000, 2500, 5000, 10000, 12500];
 
   // Handle transcription and classification
   const handleTranscript = useCallback((transcript: string) => {
-    console.log('New transcript:', transcript);
+    console.log("New transcript:", transcript);
   }, []);
 
   const handleIntent = useCallback((intent: string) => {
     console.log(`Intent detected: ${intent}`);
-    
+
     const intentActions = {
       BANK: () => handleBank(),
       NEXT: () => nextTeam(),
       ANSWER: () => handleAnswer(true),
-      STOP: () => stopListening()
+      STOP: () => stopListening(),
     };
 
     const action = intentActions[intent as keyof typeof intentActions];
@@ -87,33 +90,39 @@ function WeakestLinkGame() {
     }
   }, []);
 
-  const handleAnswer = useCallback((isCorrect: boolean) => {
-    setGameState(prev => ({
-      ...prev,
-      chainValue: isCorrect 
-        ? Math.min(prev.chainValue + 1, chainValues.length - 1)
-        : 0,
-      currentQuestion: prev.currentQuestion + 1,
-      showBankOption: isCorrect
-    }));
-  }, [chainValues.length]);
+  const handleAnswer = useCallback(
+    (isCorrect: boolean) => {
+      setGameState((prev) => ({
+        ...prev,
+        chainValue: isCorrect
+          ? Math.min(prev.chainValue + 1, chainValues.length - 1)
+          : 0,
+        currentQuestion: prev.currentQuestion + 1,
+        showBankOption: isCorrect,
+      }));
+    },
+    [chainValues.length],
+  );
 
-  const handleAnswerDetected = useCallback((answer: string) => {
-    console.log("CALLED - Answer detected", answer)
+  const handleAnswerDetected = useCallback(
+    (answer: string) => {
+      console.log("CALLED - Answer detected", answer);
 
-    const currentQuestion = questions[gameState.currentQuestion];
-    if (!currentQuestion) return;
+      const currentQuestion = questions[gameState.currentQuestion];
+      if (!currentQuestion) return;
 
-    // Compare answer with current question's answer
-    const isCorrect = answer.toLowerCase().includes(
-      currentQuestion.answer.toLowerCase()
-    );
+      // Compare answer with current question's answer
+      const isCorrect = answer
+        .toLowerCase()
+        .includes(currentQuestion.answer.toLowerCase());
 
-    console.log(`Answer detected: ${answer}`);
-    console.log(`Is correct: ${isCorrect}`);
+      console.log(`Answer detected: ${answer}`);
+      console.log(`Is correct: ${isCorrect}`);
 
-    handleAnswer(isCorrect);
-  }, [gameState.currentQuestion, questions, handleAnswer]);
+      handleAnswer(isCorrect);
+    },
+    [gameState.currentQuestion, questions, handleAnswer],
+  );
 
   const {
     isListening,
@@ -122,37 +131,39 @@ function WeakestLinkGame() {
     stopListening,
     error,
     clearTranscript,
-    classification
+    classification,
   } = useTranscription({
     onIntentDetected: handleIntent,
     onTranscript: handleTranscript,
-    onAnswerDetected: (answer) => handleAnswerDetected(answer, classification)
+    onAnswerDetected: (answer) => handleAnswerDetected(answer, classification),
   });
 
   // Game actions
   const handleBank = useCallback(() => {
-    setGameState(prev => ({
+    setGameState((prev) => ({
       ...prev,
       bankedScore: prev.bankedScore + chainValues[prev.chainValue],
       chainValue: 0,
-      showBankOption: false
+      showBankOption: false,
     }));
   }, [chainValues]);
 
   const nextTeam = useCallback(() => {
-    setGameState(prev => {
+    setGameState((prev) => {
       const newState = {
         ...prev,
         currentTeam: (prev.currentTeam + 1) % prev.maxTeam,
       };
-      
+
       speak(questions[prev.currentQuestion].question);
       return newState;
     });
   }, [speak, questions]);
 
   const startGame = useCallback(() => {
-    speak("Welcome to Linkiest Weak. A voice based spin of the hit TV show game, The Weakest Link!");
+    speak(
+      "Welcome to Linkiest Weak. A voice based spin of the hit TV show game, The Weakest Link!",
+    );
     speak("First team get ready!");
     nextTeam();
     startListening();
@@ -162,13 +173,17 @@ function WeakestLinkGame() {
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
       <Card className="w-full max-w-2xl">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">The Linkiest Weak 🔗 😩</CardTitle>
+          <CardTitle className="text-2xl text-center">
+            The Linkiest Weak 🔗 😩
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-2 gap-4 p-4 bg-card rounded-lg">
             <div className="text-center">
               <h3 className="text-lg font-semibold">Current Chain Value</h3>
-              <p className="text-2xl font-bold">£{chainValues[gameState.chainValue]}</p>
+              <p className="text-2xl font-bold">
+                £{chainValues[gameState.chainValue]}
+              </p>
             </div>
             <div className="text-center">
               <h3 className="text-lg font-semibold">Banked Score</h3>
@@ -184,44 +199,35 @@ function WeakestLinkGame() {
           </Alert>
 
           <div className="space-y-4">
-            <Button 
-              onClick={handleBank} 
+            <Button
+              onClick={handleBank}
               className="w-full"
-              variant={gameState.chainValue == chainValues.length - 1 ? "destructive" : "outline"}
+              variant={
+                gameState.chainValue == chainValues.length - 1
+                  ? "destructive"
+                  : "outline"
+              }
               disabled={!gameState.showBankOption}
             >
-              {gameState.showBankOption ? `Bank £${chainValues[gameState.chainValue]}` : "Nothing to bank!"}
-              
+              {gameState.showBankOption
+                ? `Bank £${chainValues[gameState.chainValue]}`
+                : "Nothing to bank!"}
             </Button>
 
             <div className="grid grid-cols-2 gap-4">
-              <Button
-                onClick={() => handleAnswer(true)}
-                variant="default"
-              >
+              <Button onClick={() => handleAnswer(true)} variant="default">
                 Correct Answer
               </Button>
-              <Button
-                onClick={() => handleAnswer(false)}
-                variant="destructive"
-              >
+              <Button onClick={() => handleAnswer(false)} variant="destructive">
                 Wrong Answer
               </Button>
             </div>
 
-            <Button 
-              onClick={nextTeam}
-              className="w-full"
-              variant="secondary"
-            >
+            <Button onClick={nextTeam} className="w-full" variant="secondary">
               Next Team
             </Button>
 
-            <Button 
-              onClick={startGame}
-              className="w-full"
-              variant="secondary"
-            >
+            <Button onClick={startGame} className="w-full" variant="secondary">
               Start
             </Button>
           </div>
