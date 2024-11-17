@@ -27,11 +27,7 @@ export const speak = async (text: string) => {
     const audioElement = new Audio(audioUrl);
     
     await audioElement.play();
-    
-    // Cleanup URL after playing
-    audioElement.onended = () => {
-      URL.revokeObjectURL(audioUrl);
-    };
+    new Promise(resolve => setTimeout(resolve, 10000));
   } catch (error) {
     console.error("Error playing audio:", error);
   }
