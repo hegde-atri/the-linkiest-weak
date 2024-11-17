@@ -75,6 +75,7 @@ function WeakestLinkGame() {
 
     // Provide feedback based on answer
     speak(isCorrect ? "Correct!" : "Wrong answer!");
+    nextTeam()
   }, [chainValues.length, speak]);
 
   const handleAnswerDetected = useCallback((answer: string) => {
@@ -104,8 +105,6 @@ function WeakestLinkGame() {
   }, [handleAnswer, questions]);
 
   const handleIntent = useCallback((intent: string) => {
-    console.log(`Intent detected: ${intent}`);
-    
     const intentActions = {
       BANK: () => handleBank(),
     };

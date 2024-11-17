@@ -1,7 +1,8 @@
 export class AnswerClassifier {
-  private static QUESTION_MARKERS = ['?', 'what', 'when', 'where', 'who', 'how', 'why'];
+  private static QUESTION_MARKERS = ['?', 'what', 'when', 'where', 'who', 'how', 'why', 'yeah'];
   private static COMMAND_WORDS = ['bank'];
-  private static ANSWER_INDICATORS = ['answer is', 'solution is', 'it is', 'its'];
+  private static ANSWER_INDICATORS = ['answer is', 'solution is', 'it is'];  // Removed 'its'
+  private static COMMON_EXPRESSIONS = ['its gone', 'its okay', 'its fine', 'its not', "its just"];
   private static MIN_LENGTH = 2;
   private static MAX_LENGTH = 100;
 
@@ -15,6 +16,11 @@ export class AnswerClassifier {
     // Immediate disqualifiers
     if (normalizedText.length < this.MIN_LENGTH || 
         normalizedText.length > this.MAX_LENGTH) {
+      return { score: 0, isAnswer: false, needsAICheck: false };
+    }
+
+    // Check for common expressions that shouldn't be answers
+    if (this.COMMON_EXPRESSIONS.some(expr => normalizedText.startsWith(expr))) {
       return { score: 0, isAnswer: false, needsAICheck: false };
     }
 
@@ -39,13 +45,13 @@ export class AnswerClassifier {
     const hasYear = /\b(19|20)\d{2}\b/.test(normalizedText);
     const hasSpecialChars = /[!@#$%^&*()]/.test(normalizedText);
     
-    // Check for answer indicators
+    // Check for answer indicators - now with exact phrase matching
     const containsAnswerIndicator = this.ANSWER_INDICATORS.some(
       indicator => normalizedText.includes(indicator)
     );
 
     // Common articles and prepositions
-    const commonWords = ['a', 'an', 'the', 'in', 'on', 'at', 'by', 'to', 'for'];
+    const commonWords = ['a', 'an', 'the', 'in', 'on', 'at', 'by', 'to', 'for', 'now', 'then'];
     
     // Score contributions
     if (hasNumber) score += 1;
@@ -77,6 +83,12 @@ export class AnswerClassifier {
     const match = normalizedText.match(answerPattern);
     if (match) {
       score += 2;
+    }
+
+    // Additional checks for common non-answer phrases
+    const hasCommonVerbs = /(gone|went|coming|going|running|walking)\b/.test(normalizedText);
+    if (hasCommonVerbs) {
+      score -= 2;  // Reduce score for common action verbs
     }
 
     // Decision making
