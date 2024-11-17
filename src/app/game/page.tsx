@@ -4,16 +4,9 @@ import { useState, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-
-import { useSpeech } from "@/lib/useSpeech";
 import { useTranscription } from "@/lib/useTranscription";
-import { collectSegments } from "next/dist/build/segment-config/app/app-segments";
+import { speak } from "@/lib/useSpeech";
 import { getQuestions } from "@/lib/trivia";
-
-interface Question {
-  question: string;
-  answer: string;
-}
 
 interface GameState {
   currentScore: number;
@@ -25,14 +18,12 @@ interface GameState {
   chainValue: number;
 }
 
-interface ClassificationResult {
-  isAnswer: boolean;
-  method: "rules" | "hybrid";
-  confidence: number;
+interface Question {
+  question: string;
+  answer: string;
 }
 
-function WeakestLinkGame() {
-  const { speak } = useSpeech();
+export default function WeakestLinkGame() {
   const [loading, setLoading] = useState(true);
   const [questions, setQuestions] = useState<Question[]>([
     {
@@ -77,24 +68,9 @@ function WeakestLinkGame() {
 
   const chainValues = [0, 100, 250, 500, 1000, 2500, 5000, 10000, 12500];
 
-  // Handle transcription and classification
   const handleTranscript = useCallback((transcript: string) => {
-    console.log("New transcript:", transcript);
-  }, []);
-
-  const handleIntent = useCallback((intent: string) => {
-    console.log(`Intent detected: ${intent}`);
-
-    const intentActions = {
-      BANK: () => handleBank(),
-      NEXT: () => nextTeam(),
-      ANSWER: () => handleAnswer(true),
-      STOP: () => stopListening(),
-    };
-
-    const action = intentActions[intent as keyof typeof intentActions];
-    if (action) {
-      action();
+    if (transcript) {
+      console.log(`New transcript: [${transcript}]`);
     }
   }, []);
 
@@ -105,31 +81,64 @@ function WeakestLinkGame() {
         chainValue: isCorrect
           ? Math.min(prev.chainValue + 1, chainValues.length - 1)
           : 0,
-        currentQuestion: prev.currentQuestion + 1,
+        currentQuestion: (prev.currentQuestion + 1) % questions.length,
         showBankOption: isCorrect,
       }));
+
+      // Provide feedback based on answer
+      speak(isCorrect ? "Correct!" : "Wrong answer!");
     },
-    [chainValues.length],
+    [chainValues.length, speak],
   );
 
   const handleAnswerDetected = useCallback(
     (answer: string) => {
-      console.log("CALLED - Answer detected", answer);
+      if (answer) {
+        console.log("CALLED - Answer detected, answer:", answer);
 
-      const currentQuestion = questions[gameState.currentQuestion];
-      if (!currentQuestion) return;
+        // Get current question using state directly from closure
+        setGameState((prevState) => {
+          const currentQuestion = questions[prevState.currentQuestion];
+          if (!currentQuestion) return prevState;
 
-      // Compare answer with current question's answer
-      const isCorrect = answer
-        .toLowerCase()
-        .includes(currentQuestion.answer.toLowerCase());
+          // Compare answer with current question's answer
+          const isCorrect = answer
+            .toLowerCase()
+            .includes(currentQuestion.answer.toLowerCase());
 
-      console.log(`Answer detected: ${answer}`);
-      console.log(`Is correct: ${isCorrect}`);
+          console.log(
+            "THEN - Answer comparison:",
+            answer,
+            currentQuestion.answer,
+            "isCorrect: ",
+            isCorrect,
+          );
 
-      handleAnswer(isCorrect);
+          // Call handleAnswer within the setState callback
+          handleAnswer(isCorrect);
+
+          return prevState;
+        });
+      } else {
+        console.log("Answer was empty!");
+      }
     },
-    [gameState.currentQuestion, questions, handleAnswer],
+    [handleAnswer, questions],
+  );
+
+  const handleIntent = useCallback(
+    (intent: string) => {
+      console.log(`Intent detected: ${intent}`);
+
+      const intentActions = {
+        BANK: () => handleBank(),
+      };
+      const action = intentActions[intent as keyof typeof intentActions];
+      if (action) {
+        action();
+      }
+    },
+    [handleAnswer],
   );
 
   const {
@@ -143,10 +152,9 @@ function WeakestLinkGame() {
   } = useTranscription({
     onIntentDetected: handleIntent,
     onTranscript: handleTranscript,
-    onAnswerDetected: (answer) => handleAnswerDetected(answer, classification),
+    onAnswerDetected: handleAnswerDetected,
   });
 
-  // Game actions
   const handleBank = useCallback(() => {
     setGameState((prev) => ({
       ...prev,
@@ -176,6 +184,11 @@ function WeakestLinkGame() {
     nextTeam();
     startListening();
   }, [speak, nextTeam, startListening]);
+
+  // Add useEffect to monitor gameState changes
+  // useEffect(() => {
+  //   console.log('Current game state:', gameState);
+  // }, [gameState]);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
@@ -244,5 +257,3 @@ function WeakestLinkGame() {
     </div>
   );
 }
-
-export default WeakestLinkGame;

@@ -8,7 +8,24 @@ async function checkWithAI(text: string): Promise<boolean> {
       messages: [
         {
           role: "system",
-          content: "You are a classifier that determines if text is a trivia answer. Consider: 1) Is it a statement rather than a question? 2) Does it contain factual information? 3) Is it concise? 4) Does it seem like a response to a trivia question? Respond with only 'true' or 'false'."
+          content: `You are a classifier that determines if text is a potential trivia answer. Evaluate based on these criteria:
+
+1) Could this be a direct answer to a trivia question?
+2) Is it specific (like a name, place, date, or fact)?
+3) Is it concise and to the point?
+4) Does it avoid questions or commands?
+5) Would this make sense as an answer in a quiz show?
+
+Consider these examples:
+- "Mars" => true (planet name)
+- "blue whale" => true (specific animal)
+- "The Eiffel Tower" => true (landmark)
+- "1969" => true (potential date)
+- "what time is it?" => false (question)
+- "skip this one" => false (command)
+- "maybe tomorrow" => false (vague)
+
+Respond with only 'true' or 'false'.`
         },
         {
           role: "user",

@@ -14,6 +14,27 @@ interface ClassificationResult {
   confidence: number;
 }
 
+interface IWindow extends Window {
+    webkitSpeechRecognition: any;
+    SpeechRecognition: any;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+  message?: string;
+}
+
+interface SpeechRecognitionEvent extends Event {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+}
+
+// Declare the global window with our extended interface
+declare const window: IWindow;
+
+// Create a type for cross-browser support
+type SpeechRecognitionType = typeof window.SpeechRecognition | typeof window.webkitSpeechRecognition;
+
 export const useTranscription = ({
   onTranscript,
   onIntentDetected,
@@ -25,36 +46,35 @@ export const useTranscription = ({
   const [classification, setClassification] = useState<ClassificationResult | null>(null);
 
   // Use ref instead of state for recognition instance
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<SpeechRecognitionType | null>(null);
 
   // Intent patterns
   const INTENT_PATTERNS = {
-    BANK: ['bank', 'banking', 'save points'],
-    NEXT: ['next', 'next team', 'skip'],
-    STOP: ['stop', 'end', 'finish'],
-    ANSWER: ['answer']
+    BANK: ['bank', 'banking', 'save points', 'save'],
   };
 
   const classifyText = useCallback(async (text: string) => {
-    console.log("Attempting to classify: ", text)
-    try {
-      const response = await fetch('/api/classify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text }),
-      });
-      
-      const result = await response.json();
-      console.log("Classification result:", result)
-      setClassification(result);
-      
-      if (result.isAnswer) {
-        onAnswerDetected?.(text);
+    if (text) {
+      console.log(`Attempting to classify: [${text}]`)
+      try {
+        const response = await fetch('/api/classify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ text }),
+        });
+
+        const result = await response.json();
+        console.log("Classification result:", result)
+        setClassification(result);
+
+        if (result.isAnswer) {
+          onAnswerDetected?.(text);
+        }
+      } catch (error) {
+        console.error('Classification error:', error);
       }
-    } catch (error) {
-      console.error('Classification error:', error);
     }
   }, [onAnswerDetected]);
 
@@ -78,8 +98,7 @@ export const useTranscription = ({
       return;
     }
 
-    const SpeechRecognition = window.webkitSpeechRecognition;
-    recognitionRef.current = new SpeechRecognition();
+    recognitionRef.current = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     const recognition = recognitionRef.current;
 
     recognition.continuous = true;
@@ -91,7 +110,7 @@ export const useTranscription = ({
       setError(null);
     };
 
-    recognition.onerror = (event) => {
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       const error = event as SpeechRecognitionErrorEvent;
       console.error('Speech recognition error:', error.error);
       setError(error.error);
@@ -101,7 +120,7 @@ export const useTranscription = ({
       setIsListening(false);
     };
 
-    recognition.onresult = (event) => {
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
       const current = event.resultIndex;
       const transcriptChunk = event.results[current][0].transcript;
       
