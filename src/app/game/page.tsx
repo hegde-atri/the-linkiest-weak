@@ -15,8 +15,8 @@ import {
   AlertTitle,
   AlertDescription
 } from "@/components/ui/alert";
-import { useSpeech } from "@/lib/useSpeech";
 import { useTranscription } from "@/lib/useTranscription";
+import { speak } from "@/lib/useSpeech";
 
 interface GameState {
   currentScore: number;
@@ -29,7 +29,6 @@ interface GameState {
 }
 
 function WeakestLinkGame() {
-  const { speak } = useSpeech();
   const [gameState, setGameState] = useState<GameState>({
     currentScore: 0,
     bankedScore: 0,
