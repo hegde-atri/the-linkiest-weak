@@ -25,12 +25,7 @@ interface Question {
 
 export default function WeakestLinkGame() {
   const [loading, setLoading] = useState(true);
-  const [questions, setQuestions] = useState<Question[]>([
-    {
-      question: "What is the capital of France?",
-      answer: "Paris",
-    },
-  ]);
+  // const [questions, setQuestions] = useState<Question[]>([]);
   const [e, setError] = useState<string | null>(null);
   const [gameState, setGameState] = useState<GameState>({
     currentScore: 0,
@@ -49,23 +44,256 @@ export default function WeakestLinkGame() {
     { id: 12, name: "Music" }, // Music
   ];
 
-  const fetchQuestions = async () => {
-    try {
-      setLoading(true);
-      const result = await getQuestions([27]);
-      setQuestions(result);
-      setError(null);
-    } catch (err) {
-      setError("Failed to load questions. Please try again.");
-    } finally {
-      setLoading(false);
+  // const fetchQuestions = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const result = await getQuestions([9]);
+  //     setQuestions(result);
+  //     console.log("CALLED SET Qs", questions)
+  //     setError(null);
+  //   } catch (err) {
+  //     setError("Failed to load questions. Please try again.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+  //
+  // useEffect(() => {
+  //   fetchQuestions();
+  // }, []);
+  //
+
+  const questions = [
+    {
+      "type": "multiple",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "question": "What is the Zodiac symbol for Gemini?",
+      "answer": "Twins",
+      "incorrect_answers": [
+        "Fish",
+        "Scales",
+        "Maiden"
+      ]
+    },
+    {
+      "type": "multiple",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "question": "Which sign of the zodiac is represented by the Crab?",
+      "answer": "Cancer",
+      "incorrect_answers": [
+        "Libra",
+        "Virgo",
+        "Sagittarius"
+      ]
+    },
+    {
+      "type": "multiple",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "question": "The likeness of which president is featured on the rare $2 bill of USA currency?",
+      "answer": "Thomas Jefferson",
+      "incorrect_answers": [
+        "Martin Van Buren",
+        "Ulysses Grant",
+        "John Quincy Adams"
+      ]
+    },
+    {
+      "type": "multiple",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "question": "What is the name of the company in Lethal Company?",
+      "answer": "The Company",
+      "incorrect_answers": [
+        "Planet Scrap Co.",
+        "Lethal Robotics",
+        "Gordian Shipping Co."
+      ]
+    },
+    {
+      "type": "multiple",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "question": "What is the French word for 'fish'?",
+      "answer": "poisson",
+      "incorrect_answers": [
+        "fiche",
+        "escargot",
+        "mer"
+      ]
+    },
+    {
+      "type": "multiple",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "question": "Which of the following is not the host of a program on NPR?",
+      "answer": "Ben Shapiro",
+      "incorrect_answers": [
+        "Terry Gross",
+        "Ira Glass",
+        "Peter Sagal"
+      ]
+    },
+    {
+      "type": "multiple",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "question": "Area 51 is located in which US state?",
+      "answer": "Nevada",
+      "incorrect_answers": [
+        "Arizona",
+        "New Mexico",
+        "Utah"
+      ]
+    },
+    {
+      "type": "multiple",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "question": "In which fast food chain can you order a Jamocha Shake?",
+      "answer": "Arby&#039;s",
+      "incorrect_answers": [
+        "McDonald&#039;s",
+        "Burger King",
+        "Wendy&#039;s"
+      ]
+    },
+    {
+      "type": "multiple",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "question": "What was the nickname given to the Hughes H-4 Hercules, a heavy transport flying boat which achieved flight in 1947?",
+      "answer": "Spruce Goose",
+      "incorrect_answers": [
+        "Noah&#039;s Ark",
+        "Fat Man",
+        "Trojan Horse"
+      ]
+    },
+    {
+      "type": "multiple",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "question": "In the video-game franchise Kingdom Hearts, the main protagonist, carries a weapon with what shape?",
+      "answer": "Key",
+      "incorrect_answers": [
+        "Sword",
+        "Pen",
+        "Cellphone"
+      ]
+    },
+    {
+      "type": "multiple",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "question": "How would one say goodbye in Spanish?",
+      "answer": "Adi&oacute;s",
+      "incorrect_answers": [
+        " Hola",
+        "Au Revoir",
+        "Salir"
+      ]
+    },
+    {
+      "type": "multiple",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "question": "Which of the following blood component forms a plug at the site of injuries?",
+      "answer": "Platelets",
+      "incorrect_answers": [
+        "Red blood cells",
+        "White blood cells",
+        "Blood plasma"
+      ]
+    },
+    {
+      "type": "multiple",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "question": "Which one of these is not a typical European sword design?",
+      "answer": "Scimitar",
+      "incorrect_answers": [
+        "Falchion",
+        "Ulfberht",
+        "Flamberge"
+      ]
+    },
+    {
+      "type": "multiple",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "question": "What type of animal was Harambe, who was shot after a child fell into it's enclosure at the Cincinnati Zoo?",
+      "answer": "Gorilla",
+      "incorrect_answers": [
+        "Tiger",
+        "Panda",
+        "Crocodile"
+      ]
+    },
+    {
+      "type": "multiple",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "question": "The drug cartel run by Pablo Escobar originated in which South American city?",
+      "answer": "Medell&iacute;n",
+      "incorrect_answers": [
+        "Bogot&aacute;",
+        "Quito",
+        "Cali"
+      ]
+    },
+    {
+      "type": "multiple",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "question": "What company developed the vocaloid Hatsune Miku?",
+      "answer": "Crypton Future Media",
+      "incorrect_answers": [
+        "Sega",
+        "Sony",
+        "Yamaha Corporation"
+      ]
+    },
+    {
+      "type": "multiple",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "question": "Which one of the following rhythm games was made by Harmonix?",
+      "answer": "Rock Band",
+      "incorrect_answers": [
+        "Meat Beat Mania",
+        "Guitar Hero Live",
+        "Dance Dance Revolution"
+      ]
+    },
+    {
+      "type": "multiple",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "question": "Which of these colours is NOT featured in the logo for Google?",
+      "answer": "Pink",
+      "incorrect_answers": [
+        "Yellow",
+        "Blue",
+        "Green"
+      ]
+    },
+    {
+      "type": "multiple",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "question": "When someone is inexperienced they are said to be what color?",
+      "answer": "Green",
+      "incorrect_answers": [
+        "Red",
+        "Blue",
+        "Yellow"
+      ]
     }
-  };
-
-  useEffect(() => {
-    fetchQuestions();
-  }, []);
-
+  ]
+  
   const chainValues = [0, 100, 250, 500, 1000, 2500, 5000, 10000, 12500];
 
   const handleTranscript = useCallback((transcript: string) => {
@@ -161,6 +389,7 @@ export default function WeakestLinkGame() {
       chainValue: 0,
       showBankOption: false,
     }));
+    speak("Banked!")
   }, [chainValues]);
 
   const nextTeam = useCallback(() => {
@@ -176,13 +405,13 @@ export default function WeakestLinkGame() {
   }, [speak, questions]);
 
   const startGame = useCallback(() => {
-    speak(
-      "Welcome to Linkiest Weak. A voice based spin of the hit TV show game, The Weakest Link!",
-    );
-    speak("First team get ready!");
+    // speak(
+    //   "Welcome to Linkiest Weak. A voice based spin of the hit TV show game, The Weakest Link!",
+    // );
+    // speak("First team get ready!");
     nextTeam();
     startListening();
-  }, [speak, nextTeam, startListening]);
+  }, [nextTeam, startListening]);
 
   // Add useEffect to monitor gameState changes
   // useEffect(() => {
