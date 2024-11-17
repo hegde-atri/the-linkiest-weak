@@ -58,8 +58,8 @@ function WeakestLinkGame() {
   const chainValues = [0, 100, 250, 500, 1000, 2500, 5000, 10000, 12500];
 
   const handleTranscript = useCallback((transcript: string) => {
-    if (transcript != '') {
-      console.log('New transcript:', transcript);
+    if (transcript) {
+      console.log(`New transcript: [${transcript}]`);
     }
   }, []);
 
@@ -69,7 +69,7 @@ function WeakestLinkGame() {
       chainValue: isCorrect 
         ? Math.min(prev.chainValue + 1, chainValues.length - 1)
         : 0,
-      currentQuestion: prev.currentQuestion + 1,
+      currentQuestion: (prev.currentQuestion + 1) % questions.length,
       showBankOption: isCorrect
     }));
 
@@ -78,7 +78,7 @@ function WeakestLinkGame() {
   }, [chainValues.length, speak]);
 
   const handleAnswerDetected = useCallback((answer: string) => {
-    if (answer != '') {
+    if (answer) {
       console.log("CALLED - Answer detected, answer:", answer);
 
       // Get current question using state directly from closure

@@ -54,25 +54,27 @@ export const useTranscription = ({
   };
 
   const classifyText = useCallback(async (text: string) => {
-    console.log("Attempting to classify: ", text)
-    try {
-      const response = await fetch('/api/classify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text }),
-      });
-      
-      const result = await response.json();
-      console.log("Classification result:", result)
-      setClassification(result);
-      
-      if (result.isAnswer) {
-        onAnswerDetected?.(text);
+    if (text) {
+      console.log(`Attempting to classify: [${text}]`)
+      try {
+        const response = await fetch('/api/classify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ text }),
+        });
+
+        const result = await response.json();
+        console.log("Classification result:", result)
+        setClassification(result);
+
+        if (result.isAnswer) {
+          onAnswerDetected?.(text);
+        }
+      } catch (error) {
+        console.error('Classification error:', error);
       }
-    } catch (error) {
-      console.error('Classification error:', error);
     }
   }, [onAnswerDetected]);
 
