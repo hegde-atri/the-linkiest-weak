@@ -12,6 +12,21 @@ import { Button } from "./ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { speak } from "@/lib/useSpeech";
 
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+  message?: string;
+}
+
+interface SpeechRecognitionEvent extends Event {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+}
+
+interface Window {
+    webkitSpeechRecognition: any;
+    SpeechRecognition: any;
+}
+
 function ContinuousSpeechLanding() {
 	const [isStarted, setIsStarted] = useState(false);
 	const [stage, setStage] = useState(0);
@@ -35,11 +50,14 @@ function ContinuousSpeechLanding() {
 	}, [stage, teams, category, announcementMade]);
 
 	useEffect(() => {
+    //@ts-ignore
 		if (window.webkitSpeechRecognition) {
+      //@ts-ignore
 			const recognition = new window.webkitSpeechRecognition();
 			recognition.continuous = true;
 			recognition.interimResults = false;
 
+      //@ts-ignore
 			recognition.onresult = (event) => {
 				const result = event.results[event.results.length - 1];
 				const transcriptText = result[0].transcript.toLowerCase().trim();
@@ -119,7 +137,7 @@ function ContinuousSpeechLanding() {
 				}
 			};
 
-			recognition.onerror = (event) => {
+			recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
 				console.error("Speech recognition error:", event.error);
 				setTranscript(`Error: ${event.error}. Please try again.`);
 			};
@@ -129,6 +147,7 @@ function ContinuousSpeechLanding() {
 
 		return () => {
 			if (recognitionRef.current) {
+        //@ts-ignore
 				recognitionRef.current.stop();
 			}
 		};
@@ -136,6 +155,7 @@ function ContinuousSpeechLanding() {
 
 	const startContinuousListening = () => {
 		if (recognitionRef.current && !isStarted) {
+      //@ts-ignore
 			recognitionRef.current.start();
 			setIsStarted(true);
 			setTranscript("Listening... Say 'Start' to begin the game setup");
